@@ -44,14 +44,28 @@ python -m pytest
 ```
 
 Tests use isolated configuration and SQLite in memory; no PostgreSQL is needed.
-For local startup, set `DATABASE_URL` in your environment or copy `.env.example`
-to `.env` and replace its example credentials. Environment variables override
+For local startup, set `DATABASE_URL` and `JWT_SECRET_KEY` in your environment or copy `.env.example`
+to `.env` and replace its example credentials and secret. Use a unique random
+JWT secret of at least 32 characters. `JWT_ALGORITHM` is `HS256` and
+`ACCESS_TOKEN_EXPIRE_MINUTES` defaults to 30 (must be positive). Environment variables override
 `.env`. `APP_NAME`, `ENVIRONMENT`, and `API_V1_PREFIX` have development defaults.
 
+With PostgreSQL available and configuration set, apply the migration explicitly:
+
 ```bash
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
 `GET /api/v1/health` returns `{"status":"ok"}` without opening a database
 connection. Startup validates configuration but does not connect to PostgreSQL
-or create tables. Domain models and versioned migrations will follow later.
+or create tables. Alembic uses the application database URL and tracks schema
+versions; `alembic history` shows the migration history. Only `users` is modeled.
+
+Authentication accepts JSON at `POST /api/v1/auth/register` (first name, last name,
+email, password) and `POST /api/v1/auth/login` (email, password). Registration
+requires an 8–128 character password; passwords are stored as Argon2 hashes.
+Login returns a Bearer JWT for `GET /api/v1/auth/me`. Responses never include
+passwords or hashes. Duplicate registration returns 409; invalid credentials,
+inactive accounts, and missing/invalid tokens return 401. There are no global
+roles; team/project membership authorization belongs to later milestones.

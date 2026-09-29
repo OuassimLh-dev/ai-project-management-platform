@@ -1,15 +1,15 @@
 import pytest
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from app.db import session as database
-from app.db.base import Base
 
 
 def test_sqlite_session_executes_statement(engine):
     with sessionmaker(bind=engine)() as session:
         assert session.scalar(text("SELECT 1")) == 1
-    assert not Base.metadata.tables
+    # Building an engine/session never creates application tables automatically.
+    assert inspect(engine).get_table_names() == []
 
 
 @pytest.mark.parametrize("scheme", ["postgresql", "postgresql+psycopg"])
