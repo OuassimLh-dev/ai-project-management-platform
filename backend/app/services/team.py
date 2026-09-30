@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Team, TeamMember, TeamRole
+from app.models import Project, ProjectMember, Team, TeamMember, TeamRole
 from app.schemas.team import MemberAddRequest, TeamCreate, TeamUpdate
 from app.services.auth import find_user_by_email
 from app.services.team_authorization import TeamError, require_manager, require_membership_change
@@ -102,5 +102,9 @@ def remove_member(db: Session, team_id: int, actor_id: int, user_id: int) -> Non
     if target is None:
         raise TeamError(404, "Team member not found")
     require_membership_change(actor, target)
+    assigned = db.scalar(select(ProjectMember.id).join(Project).where(
+        Project.team_id == team_id, ProjectMember.user_id == user_id).limit(1))
+    if assigned is not None:
+        raise TeamError(400, "Remove project memberships before removing this team member")
     db.delete(target)
     db.commit()

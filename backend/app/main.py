@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.teams import router as teams_router
+from app.api.routes.projects import router as projects_router
+from app.services.project_authorization import ProjectError
 from app.services.team_authorization import TeamError
 
 from app.api.routes.health import router as health_router
@@ -19,8 +21,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.include_router(teams_router, prefix=settings.api_v1_prefix)
 
+    application.include_router(projects_router, prefix=settings.api_v1_prefix)
+
+    @application.exception_handler(ProjectError)
     @application.exception_handler(TeamError)
-    async def team_error(request: Request, exc: TeamError) -> JSONResponse:
+    async def team_error(request: Request, exc: TeamError | ProjectError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @application.exception_handler(RequestValidationError)

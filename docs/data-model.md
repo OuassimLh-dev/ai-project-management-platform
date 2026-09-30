@@ -87,8 +87,7 @@ Core fields:
 Initial project roles:
 
 - manager
-- developer
-- viewer
+- member
 
 ## Sprint
 

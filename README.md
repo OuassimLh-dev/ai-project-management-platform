@@ -60,7 +60,8 @@ uvicorn app.main:app --reload
 `GET /api/v1/health` returns `{"status":"ok"}` without opening a database
 connection. Startup validates configuration but does not connect to PostgreSQL
 or create tables. Alembic uses the application database URL and tracks schema
-versions; `alembic history` shows the migration history. `users`, `teams`, and `team_members` are modeled.
+versions; `alembic history` shows the migration history. Users, teams, projects,
+and their memberships are modeled.
 
 Authentication accepts JSON at `POST /api/v1/auth/register` (first name, last name,
 email, password) and `POST /api/v1/auth/login` (email, password). Registration
@@ -82,3 +83,21 @@ Adding by email requires an existing user. Assigning, removing, or demoting
 the owner returns 400. Ownership transfer
 and team deletion are not implemented in V1. Apply migration `0002` with the same
 `alembic upgrade head` command.
+
+
+Projects belong to one team. Create/list them at
+`POST`/`GET /api/v1/teams/{team_id}/projects`; view/update them at
+`GET`/`PATCH /api/v1/projects/{project_id}`. Membership endpoints are
+`GET`/`POST /api/v1/projects/{project_id}/members` and
+`PATCH`/`DELETE /api/v1/projects/{project_id}/members/{user_id}` (DELETE returns 204).
+Creation requires a team owner/admin and atomically makes the creator a project
+manager. Project keys are required, normalized to uppercase, unique per team,
+and contain 1–20 alphanumeric characters starting with a letter. The documented
+`is_active` field defaults true; it is metadata, not an access-control switch.
+Team owners/admins have administrative access to every project in their team.
+Other team members see only assigned projects: project managers manage metadata
+and membership; project members have read access. Adding a member by `user_id`
+requires existing team membership. Remove project memberships before removing a
+user from the team. Multiple managers are allowed, but removing/demoting the last
+manager returns 400. Project deletion is not implemented. Apply migration `0003`
+with `alembic upgrade head`.
