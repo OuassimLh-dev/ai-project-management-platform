@@ -7,4 +7,6 @@ from app.models.sprint import Sprint, SprintStatus
 
 from app.models.issue import Issue, IssueType, IssuePriority, IssueStatus
 
-__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus", "Issue", "IssueType", "IssuePriority", "IssueStatus"]
+from app.models.issue_collaboration import IssueComment, IssueActivity
+
+__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus", "Issue", "IssueType", "IssuePriority", "IssueStatus", "IssueComment", "IssueActivity"]

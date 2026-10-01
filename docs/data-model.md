@@ -194,6 +194,12 @@ Core fields:
 - created_at
 - updated_at
 
+V1 comments use trimmed, nonblank `body` text, limited to 10000 characters.
+Authorized issue users can create/list comments. Only the author, while still
+having issue access, may edit/delete their comment; managers have no moderation
+override. Comments are ordered by ID. Author identity survives membership removal.
+Comment actions are separate from issue field activity.
+
 ## IssueActivity
 
 Provides an audit-style history for meaningful issue changes.
@@ -216,6 +222,15 @@ Examples:
 - priority changed
 - assignee changed
 - sprint changed
+
+V1 stores history in `issue_activity`, read-only through the API. Creation adds
+one `created` event with null field/old/new values. Updates add `field_changed`
+rows for actual changes to title, description, issue_type, priority, status,
+assignee_id, and sprint_id. Enums use lowercase values, IDs use decimal strings,
+and null remains SQL/API null. No-op updates and reads add nothing. Issue and
+history writes commit atomically; history is ordered by created_at then ID.
+Historical actor identity survives membership removal. Existing issues receive
+no fabricated backfill events when migration 0006 is applied.
 
 ## AIAnalysis
 

@@ -7,6 +7,7 @@ from app.api.routes.teams import router as teams_router
 from app.api.routes.projects import router as projects_router
 from app.api.routes.sprints import router as sprints_router
 from app.api.routes.issues import router as issues_router
+from app.api.routes.issue_collaboration import router as issue_collaboration_router
 from app.services.issue import IssueError
 from app.services.sprint import SprintError
 from app.services.project_authorization import ProjectError
@@ -30,6 +31,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(sprints_router, prefix=settings.api_v1_prefix)
 
     application.include_router(issues_router, prefix=settings.api_v1_prefix)
+
+    application.include_router(issue_collaboration_router, prefix=settings.api_v1_prefix)
 
     @application.exception_handler(IssueError)
     @application.exception_handler(SprintError)

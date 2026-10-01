@@ -128,3 +128,12 @@ Use `POST`/`GET /api/v1/projects/{project_id}/issues` and
 `GET`/`PATCH /api/v1/issues/{issue_id}`. Lists sort by number and support exact
 `status`, `priority`, `issue_type`, `assignee_id`, and `sprint_id` filters.
 Apply migration `0005` with `alembic upgrade head`. Issue deletion is not implemented.
+
+
+Issue comments: `POST`/`GET /api/v1/issues/{issue_id}/comments` allow authorized
+issue users to create/list comments. Only the author with current issue access
+may `PATCH`/`DELETE /api/v1/issues/{issue_id}/comments/{comment_id}`.
+`GET /api/v1/issues/{issue_id}/activity` returns append-only history: one creation
+event and one entry per changed issue field, committed atomically with the issue.
+No-op updates add nothing; comment actions remain separate from field history.
+Apply migration `0006` with `alembic upgrade head`.

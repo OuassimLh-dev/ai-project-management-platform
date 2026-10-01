@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import Issue, ProjectMember, Sprint, User
 from app.schemas.issue import IssueCreate, IssueUpdate
 from app.services.project_authorization import resolve_project
+from app.services.issue_activity import record_creation, record_changes
 
 
 class IssueError(Exception):
@@ -48,6 +49,7 @@ def create_issue(db: Session, project_id: int, actor_id: int, payload: IssueCrea
         issue = Issue(project=project, number=number, reporter_id=actor_id, **payload.model_dump())
         try:
             db.add(issue)
+            record_creation(db, issue, actor_id)
             db.commit()
         except IntegrityError:
             db.rollback()
@@ -92,9 +94,10 @@ def update_issue(db: Session, issue_id: int, actor_id: int, payload: IssueUpdate
         validate_assignee(db, issue.project_id, changes["assignee_id"])
     if "sprint_id" in changes:
         validate_sprint(db, issue.project_id, changes["sprint_id"])
-    for field, value in changes.items():
-        setattr(issue, field, value)
     try:
+        record_changes(db, issue, actor_id, changes)
+        for field, value in changes.items():
+            setattr(issue, field, value)
         db.commit()
     except IntegrityError:
         db.rollback()
