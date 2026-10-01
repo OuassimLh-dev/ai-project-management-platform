@@ -252,6 +252,17 @@ AI analysis is advisory.
 
 It must not silently modify the issue type or priority.
 
+V1 stores immutable history in `ai_analyses`, using exactly these fields.
+`suggested_type` and `suggested_priority` reuse Issue enums. Summary is trimmed,
+nonblank, at most 2000 characters; explanation is trimmed, nonblank, at most 1000.
+`model_name` records the configured provider/model (for example `openai/<model>`),
+at most 200 characters. Only title/description are sent for analysis; comments,
+activity, and user details are excluded. Each valid successful execution creates
+one row. No Issue field or IssueActivity is changed. No analysis update/delete
+API exists. Access follows the Issue; historic requesters remain linked to Users.
+Network calls run without an open database transaction; access is checked again
+before persistence. No input version tracking is provided in V1.
+
 ## Relationships
 
 User

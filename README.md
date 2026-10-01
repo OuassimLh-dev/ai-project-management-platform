@@ -137,3 +137,25 @@ may `PATCH`/`DELETE /api/v1/issues/{issue_id}/comments/{comment_id}`.
 event and one entry per changed issue field, committed atomically with the issue.
 No-op updates add nothing; comment actions remain separate from field history.
 Apply migration `0006` with `alembic upgrade head`.
+
+
+AI issue analysis is advisory only: it summarizes the issue, suggests its type
+and priority, and gives a concise priority explanation. It never changes Issue
+fields or IssueActivity. Authorized issue users may call
+`POST /api/v1/issues/{issue_id}/ai/analyze` with no body, then
+`GET /api/v1/issues/{issue_id}/ai/analyses` for immutable history.
+Responses preserve the documented `suggested_type`, `explanation`, and
+`model_name` fields. Apply migration `0007` with `alembic upgrade head`.
+
+AI is disabled by default. In the environment or backend `.env`, set
+`AI_PROVIDER=openai`, `AI_MODEL` to a Responses API model supporting Structured
+Outputs, and `OPENAI_API_KEY` to your own secret. `AI_TIMEOUT_SECONDS` defaults
+to 30 (positive, at most 120). Never commit the real key. Missing AI configuration
+returns 503 only on analysis execution; history and other endpoints remain usable.
+The OpenAI adapter uses the existing HTTPX dependency, strict JSON schema output,
+and sends only issue title/description as untrusted data. No vendor SDK is needed.
+It disables response storage and does not retry requests. Provider failures return
+safe 502/503 errors. No database transaction is held during the external call;
+access is rechecked before saving. Results describe the input read at request time,
+which may have since changed. Tests use deterministic providers and mocked HTTP,
+with live HTTP transport blocked; no API account/key is required for pytest.

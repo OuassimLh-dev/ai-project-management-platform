@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -21,7 +22,8 @@ def isolated_configuration(monkeypatch, tmp_path):
     # Never read developer configuration or inherit application environment values.
     monkeypatch.setitem(Settings.model_config, "env_file", None)
     for key in ("APP_NAME", "ENVIRONMENT", "API_V1_PREFIX", "DATABASE_URL",
-                "JWT_SECRET_KEY", "JWT_ALGORITHM", "ACCESS_TOKEN_EXPIRE_MINUTES"):
+                "JWT_SECRET_KEY", "JWT_ALGORITHM", "ACCESS_TOKEN_EXPIRE_MINUTES",
+                "AI_PROVIDER", "AI_MODEL", "OPENAI_API_KEY", "AI_TIMEOUT_SECONDS"):
         monkeypatch.delenv(key, raising=False)
         monkeypatch.delenv(key.lower(), raising=False)
     monkeypatch.chdir(tmp_path)
@@ -76,3 +78,12 @@ def auth_engine():
 def db_session(auth_engine):
     with Session(auth_engine) as session:
         yield session
+
+
+@pytest.fixture(autouse=True)
+def prevent_live_http(monkeypatch):
+    # TestClient and explicit MockTransport remain available; real HTTP never is.
+    def blocked(*args, **kwargs):
+        raise AssertionError("Live HTTP is forbidden in tests")
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)
+    monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", blocked)

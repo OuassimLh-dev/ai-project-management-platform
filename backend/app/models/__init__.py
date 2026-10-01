@@ -9,4 +9,6 @@ from app.models.issue import Issue, IssueType, IssuePriority, IssueStatus
 
 from app.models.issue_collaboration import IssueComment, IssueActivity
 
-__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus", "Issue", "IssueType", "IssuePriority", "IssueStatus", "IssueComment", "IssueActivity"]
+from app.models.ai_analysis import AIAnalysis
+
+__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus", "Issue", "IssueType", "IssuePriority", "IssueStatus", "IssueComment", "IssueActivity", "AIAnalysis"]

@@ -8,6 +8,8 @@ from app.api.routes.projects import router as projects_router
 from app.api.routes.sprints import router as sprints_router
 from app.api.routes.issues import router as issues_router
 from app.api.routes.issue_collaboration import router as issue_collaboration_router
+from app.api.routes.ai_analysis import router as ai_analysis_router
+from app.services.ai_analysis import AIAnalysisError
 from app.services.issue import IssueError
 from app.services.sprint import SprintError
 from app.services.project_authorization import ProjectError
@@ -34,11 +36,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.include_router(issue_collaboration_router, prefix=settings.api_v1_prefix)
 
+    application.include_router(ai_analysis_router, prefix=settings.api_v1_prefix)
+
+    @application.exception_handler(AIAnalysisError)
     @application.exception_handler(IssueError)
     @application.exception_handler(SprintError)
     @application.exception_handler(ProjectError)
     @application.exception_handler(TeamError)
-    async def team_error(request: Request, exc: TeamError | ProjectError | SprintError | IssueError) -> JSONResponse:
+    async def team_error(request: Request, exc: TeamError | ProjectError | SprintError | IssueError | AIAnalysisError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @application.exception_handler(RequestValidationError)

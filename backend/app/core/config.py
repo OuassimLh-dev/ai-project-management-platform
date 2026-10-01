@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_expire_minutes: int = Field(default=30, gt=0)
 
+    ai_provider: str = "none"
+    ai_model: str = Field(default="", max_length=180)
+    openai_api_key: SecretStr | None = None
+    ai_timeout_seconds: float = Field(default=30, gt=0, le=120, allow_inf_nan=False)
+
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, value: str) -> str:

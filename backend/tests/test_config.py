@@ -87,3 +87,29 @@ def test_auth_config_environment_override(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", TEST_JWT_SECRET)
     monkeypatch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
     assert get_settings().access_token_expire_minutes == 15
+
+
+def test_ai_defaults_are_optional(settings):
+    assert settings.ai_provider == "none" and settings.ai_model == ""
+    assert settings.openai_api_key is None and settings.ai_timeout_seconds == 30
+
+
+def test_ai_environment_and_secret_representation(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
+    monkeypatch.setenv("JWT_SECRET_KEY", TEST_JWT_SECRET)
+    monkeypatch.setenv("AI_PROVIDER", "openai")
+    monkeypatch.setenv("AI_MODEL", "test-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-only-ai-key")
+    monkeypatch.setenv("AI_TIMEOUT_SECONDS", "15")
+    settings = get_settings()
+    assert settings.ai_provider == "openai" and settings.ai_model == "test-model"
+    assert settings.ai_timeout_seconds == 15
+    assert settings.openai_api_key.get_secret_value() == "fake-only-ai-key"
+    assert "fake-only-ai-key" not in repr(settings)
+    assert "fake-only-ai-key" not in settings.model_dump_json()
+
+
+@pytest.mark.parametrize("timeout", [0, -1, 121, float("nan"), float("inf")])
+def test_invalid_ai_timeout(timeout):
+    with pytest.raises(ValidationError):
+        Settings(database_url=TEST_DATABASE_URL, jwt_secret_key=TEST_JWT_SECRET, ai_timeout_seconds=timeout)
