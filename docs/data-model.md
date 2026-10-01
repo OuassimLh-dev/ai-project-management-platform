@@ -112,6 +112,14 @@ Initial sprint statuses:
 - completed
 - cancelled
 
+V1 details: names are trimmed, nonblank, at most 150 characters, and need not be
+unique. Goal is optional (up to 5000 characters); both dates are required and
+end_date must be on or after start_date. No creator field is defined for sprints.
+New sprints start planned. Allowed transitions are planned -> active/cancelled
+and active -> completed/cancelled. Completed and cancelled are terminal; setting
+the existing status again is a no-op. Metadata remains editable in any status.
+Dates never automatically change status.
+
 ## Issue
 
 Represents work tracked within a project.

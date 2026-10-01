@@ -61,7 +61,7 @@ uvicorn app.main:app --reload
 connection. Startup validates configuration but does not connect to PostgreSQL
 or create tables. Alembic uses the application database URL and tracks schema
 versions; `alembic history` shows the migration history. Users, teams, projects,
-and their memberships are modeled.
+their memberships, and project-scoped sprints are modeled.
 
 Authentication accepts JSON at `POST /api/v1/auth/register` (first name, last name,
 email, password) and `POST /api/v1/auth/login` (email, password). Registration
@@ -101,3 +101,14 @@ requires existing team membership. Remove project memberships before removing a
 user from the team. Multiple managers are allowed, but removing/demoting the last
 manager returns 400. Project deletion is not implemented. Apply migration `0003`
 with `alembic upgrade head`.
+
+
+Sprints belong to projects: `POST`/`GET /api/v1/projects/{project_id}/sprints`
+create/list them; `GET`/`PATCH /api/v1/sprints/{sprint_id}` retrieve/update them.
+Project managers and parent-team owners/admins can create/update; authorized
+project readers can read/list. Project `is_active` remains metadata and does not
+change these permissions. New sprints start `planned`; transitions are
+`planned → active/cancelled` and `active → completed/cancelled`. Terminal statuses
+cannot reopen; metadata remains editable. Names may repeat, goals are optional,
+and required dates permit same-day sprints. Dates never change status automatically.
+No sprint deletion is implemented. Apply migration `0004` with `alembic upgrade head`.
