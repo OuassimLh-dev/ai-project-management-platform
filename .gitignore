@@ -26,3 +26,6 @@ coverage/
 # Editors
 .vscode/
 .idea/
+
+# Frontend tooling
+.vite/

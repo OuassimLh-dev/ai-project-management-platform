@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.teams import router as teams_router
@@ -22,6 +23,10 @@ from app.core.config import Settings, get_settings
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else get_settings()
     application = FastAPI(title=f"{settings.app_name} API")
+    if settings.cors_allowed_origins:
+        application.add_middleware(CORSMiddleware, allow_origins=settings.cors_allowed_origins,
+                                   allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "DELETE"],
+                                   allow_headers=["Authorization", "Content-Type"])
     application.dependency_overrides[get_settings] = lambda: settings
     application.include_router(health_router, prefix=settings.api_v1_prefix)
     application.include_router(auth_router, prefix=settings.api_v1_prefix)

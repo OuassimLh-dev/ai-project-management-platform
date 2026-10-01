@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,24 @@ class Settings(BaseSettings):
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_expire_minutes: int = Field(default=30, gt=0)
+
+    cors_allowed_origins: list[str] = Field(default_factory=list)
+
+    @field_validator("cors_allowed_origins")
+    @classmethod
+    def validate_cors_origins(cls, values: list[str]) -> list[str]:
+        for origin in values:
+            try:
+                url = urlsplit(origin)
+                valid = (url.scheme in {"http", "https"} and url.hostname and not url.username
+                         and not url.password and not url.path and not url.query and not url.fragment
+                         and "*" not in origin and not any(c.isspace() for c in origin))
+                _ = url.port
+            except ValueError:
+                valid = False
+            if not valid:
+                raise ValueError("CORS origins must be explicit HTTP(S) origins without paths")
+        return values
 
     ai_provider: str = "none"
     ai_model: str = Field(default="", max_length=180)

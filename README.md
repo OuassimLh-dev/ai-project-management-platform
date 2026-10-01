@@ -159,3 +159,63 @@ safe 502/503 errors. No database transaction is held during the external call;
 access is rechecked before saving. Results describe the input read at request time,
 which may have since changed. Tests use deterministic providers and mocked HTTP,
 with live HTTP transport blocked; no API account/key is required for pytest.
+
+## Frontend Development
+
+The V1 frontend uses React, strict TypeScript, Vite, React Router, Axios, and Zod
+response validation. It includes registration/login, teams and project navigation,
+team/project creation, issue lists with status/priority/type filters, issue
+creation/editing, comments, and read-only activity. Assignment selectors use
+existing project-member and sprint APIs. User IDs are shown where the API does
+not provide names. AI UI, comment edit/delete controls, membership administration,
+sprint administration, and analytics are intentionally deferred.
+
+Use Node.js 22.12+ (a current supported LTS release is recommended). From the
+repository root:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://127.0.0.1:5173. The API defaults to
+`http://localhost:8000/api/v1`. To change it, copy `frontend/.env.example` to
+`frontend/.env`, set `VITE_API_BASE_URL`, and restart Vite. Vite variables are public
+build-time values; never put secrets in them. `package-lock.json` is included;
+subsequent reproducible installs can use `npm ci`.
+
+In a separate terminal, configure the backend as described above, then run:
+
+```bash
+cd backend
+source .venv/bin/activate
+export CORS_ALLOWED_ORIGINS='["http://localhost:5173","http://127.0.0.1:5173"]'
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+`CORS_ALLOWED_ORIGINS` accepts a JSON array of explicit HTTP(S) origins. It defaults
+to an empty list; the backend environment example lists the two local Vite origins.
+Cookies/credentialed CORS are disabled; authentication uses an Authorization
+Bearer header. Configure explicit origins for other environments.
+
+Authentication uses a single sessionStorage token module: boot verifies `/auth/me`,
+logout removes the token, and an authenticated request returning 401 clears the
+session and redirects to login. Passwords are never persisted. sessionStorage
+limits persistence to the browser tab but is still accessible to JavaScript;
+HttpOnly cookie authentication would require a future backend change. Registration
+creates an account and then directs the user to sign in.
+
+Frontend verification (no running backend needed for tests):
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+npm test -- --run
+```
+
+Vitest, React Testing Library, and user-event exercise flows through a mocked Axios
+transport. No ESLint configuration or lint script is included in this milestone.
+Build output, dependencies, coverage, caches, and real environment files are ignored.

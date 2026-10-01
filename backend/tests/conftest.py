@@ -23,7 +23,7 @@ def isolated_configuration(monkeypatch, tmp_path):
     monkeypatch.setitem(Settings.model_config, "env_file", None)
     for key in ("APP_NAME", "ENVIRONMENT", "API_V1_PREFIX", "DATABASE_URL",
                 "JWT_SECRET_KEY", "JWT_ALGORITHM", "ACCESS_TOKEN_EXPIRE_MINUTES",
-                "AI_PROVIDER", "AI_MODEL", "OPENAI_API_KEY", "AI_TIMEOUT_SECONDS"):
+                "CORS_ALLOWED_ORIGINS", "AI_PROVIDER", "AI_MODEL", "OPENAI_API_KEY", "AI_TIMEOUT_SECONDS"):
         monkeypatch.delenv(key, raising=False)
         monkeypatch.delenv(key.lower(), raising=False)
     monkeypatch.chdir(tmp_path)
