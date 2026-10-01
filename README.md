@@ -112,3 +112,19 @@ change these permissions. New sprints start `planned`; transitions are
 cannot reopen; metadata remains editable. Names may repeat, goals are optional,
 and required dates permit same-day sprints. Dates never change status automatically.
 No sprint deletion is implemented. Apply migration `0004` with `alembic upgrade head`.
+
+
+Issues belong to projects. All authorized project readers can create and edit
+issues. Types are `bug`, `feature`, and `task`; priorities are `low`, `medium`
+(default), `high`, and `critical`. Status defaults to `backlog`; `todo`,
+`in_progress`, `in_review`, `done`, and `cancelled` are also supported, with free
+transitions in V1. Project-local immutable numbers start at 1; `issue_key` derives
+from the current project key and number (for example `API-17`). The authenticated
+creator is the reporter (`created_by_id` in storage, `reporter_id` in responses).
+Optional assignees must be explicit ProjectMembers; optional sprints must belong
+to the same project. Both may be cleared with null.
+
+Use `POST`/`GET /api/v1/projects/{project_id}/issues` and
+`GET`/`PATCH /api/v1/issues/{issue_id}`. Lists sort by number and support exact
+`status`, `priority`, `issue_type`, `assignee_id`, and `sprint_id` filters.
+Apply migration `0005` with `alembic upgrade head`. Issue deletion is not implemented.

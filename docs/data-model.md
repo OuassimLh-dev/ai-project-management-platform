@@ -128,6 +128,7 @@ Core fields:
 
 - id
 - project_id
+- number
 - sprint_id
 - created_by_id
 - assignee_id
@@ -162,6 +163,23 @@ Issue priorities:
 - critical
 
 An issue may exist without a sprint or assignee.
+
+V1 details: `created_by_id` is the authenticated creator/reporter, exposed as
+`reporter_id` in the API (one stored foreign key, not two identities). Clients
+cannot set either creator field. Titles are trimmed, nonblank, and at most 200
+characters; optional descriptions are trimmed and limited to 10000 characters.
+Type is required; priority defaults to medium and status to backlog. Authorized
+project users can change freely between all valid issue statuses.
+
+Numbers start at 1 within each project, are immutable, and are allocated under
+parent project locks using max(number) + 1. There is no issue deletion; numbers
+are not reused. The derived API `issue_key` uses the current Project.key and the
+stable number, so changing a project key changes its displayed issue keys.
+Keys are project/team context identifiers, not globally unique lookup keys.
+Assignees must be explicit project members; sprints must belong to the same
+project. Either reference can be cleared with null. Sprint status does not
+change issue status. Project readers (including ordinary project members) may
+create and edit issues. Project activity remains metadata.
 
 ## IssueComment
 

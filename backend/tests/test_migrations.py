@@ -18,8 +18,8 @@ def test_migration_upgrade_and_downgrade_on_disposable_sqlite(engine):
     with engine.begin() as connection:
         config.attributes["connection"] = connection
         command.upgrade(config, "head")
-        assert set(inspect(connection).get_table_names()) == {"users", "teams", "team_members", "projects", "project_members", "sprints", "alembic_version"}
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
+        assert set(inspect(connection).get_table_names()) == {"users", "teams", "team_members", "projects", "project_members", "sprints", "issues", "alembic_version"}
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005"
         indexes = inspect(connection).get_indexes("users")
         assert any(index["name"] == "ix_users_email" and index["unique"] for index in indexes)
         assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
@@ -27,6 +27,9 @@ def test_migration_upgrade_and_downgrade_on_disposable_sqlite(engine):
                                 "VALUES ('Migration', 'Test', 'migration@example.com', 'test-only-hash')"))
         # Re-applying head must preserve the already migrated schema.
         command.upgrade(config, "head")
+        command.downgrade(config, "0004")
+        assert set(inspect(connection).get_table_names()) == {"users", "teams", "team_members", "projects", "project_members", "sprints", "alembic_version"}
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
         command.downgrade(config, "0003")
         assert set(inspect(connection).get_table_names()) == {"users", "teams", "team_members", "projects", "project_members", "alembic_version"}
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
@@ -50,6 +53,7 @@ def test_postgresql_offline_migration(monkeypatch):
     config = Config(str(CONFIG), output_buffer=output)
     command.upgrade(config, "head", sql=True)
     sql = output.getvalue()
+    assert "CREATE TABLE issues" in sql
     assert "CREATE TABLE sprints" in sql
     assert "CREATE TABLE projects" in sql
     assert "CREATE TABLE project_members" in sql

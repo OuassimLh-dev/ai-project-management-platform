@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Project, ProjectMember, ProjectRole, User
+from app.models import Issue, Project, ProjectMember, ProjectRole, User
 from app.schemas.project import ProjectCreate, ProjectMemberAddRequest, ProjectUpdate
 from app.services.team import get_membership, get_team
 from app.services.project_authorization import (
@@ -116,5 +116,10 @@ def remove_member(db: Session, project_id: int, actor_id: int, user_id: int) -> 
     resolve_project(db, project_id, actor_id, manage=True, lock=True)
     target = target_member(db, project_id, user_id)
     preserve_manager(db, target)
+    # The parent locks also serialize issue assignment changes in this project.
+    if db.scalar(select(Issue.id).where(
+        Issue.project_id == project_id, Issue.assignee_id == user_id,
+    ).limit(1)) is not None:
+        raise ProjectError(400, "Unassign issues before removing this project member")
     db.delete(target)
     db.commit()

@@ -5,4 +5,6 @@ from app.models.project import Project, ProjectMember, ProjectRole
 
 from app.models.sprint import Sprint, SprintStatus
 
-__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus"]
+from app.models.issue import Issue, IssueType, IssuePriority, IssueStatus
+
+__all__ = ["User", "Team", "TeamMember", "TeamRole", "Project", "ProjectMember", "ProjectRole", "Sprint", "SprintStatus", "Issue", "IssueType", "IssuePriority", "IssueStatus"]
