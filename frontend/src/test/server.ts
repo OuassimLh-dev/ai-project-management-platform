@@ -9,6 +9,7 @@ import {
   project,
   projectMembers,
   sprint,
+  plannedSprint,
   team,
   teamMembers,
   user,
@@ -87,6 +88,11 @@ export function resetServer() {
   reply("GET", "/projects/1", project);
   reply("GET", "/projects/1/members", projectMembers);
   reply("GET", "/projects/1/sprints", [sprint]);
+  reply("POST", "/projects/1/sprints", plannedSprint, 201);
+  reply("GET", "/sprints/1", sprint);
+  reply("GET", "/sprints/2", plannedSprint);
+  reply("PATCH", "/sprints/1", sprint);
+  reply("PATCH", "/sprints/2", plannedSprint);
   reply("GET", "/projects/1/issues", [issue]);
   reply("POST", "/projects/1/issues", issue, 201);
   reply("GET", "/issues/1", issue);

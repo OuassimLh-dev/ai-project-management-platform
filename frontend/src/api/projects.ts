@@ -1,8 +1,8 @@
+import { sprintsApi } from "./sprints";
 import { request } from "./client";
 import {
   projectSchema,
   projectMemberSchema,
-  sprintSchema,
   type ProjectInput,
 } from "../types/api";
 export const projectsApi = {
@@ -16,6 +16,5 @@ export const projectsApi = {
     }),
   members: (id: number) =>
     request(`/projects/${id}/members`, projectMemberSchema.array()),
-  sprints: (id: number) =>
-    request(`/projects/${id}/sprints`, sprintSchema.array()),
+  sprints: sprintsApi.list,
 };

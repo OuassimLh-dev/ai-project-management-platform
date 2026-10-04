@@ -168,7 +168,16 @@ team/project creation, issue lists with status/priority/type filters, issue
 creation/editing, comments, and read-only activity. Assignment selectors use
 existing project-member and sprint APIs. User IDs are shown where the API does
 not provide names. Comment edit/delete controls, membership administration,
-sprint administration, and analytics are intentionally deferred.
+and analytics are intentionally deferred.
+
+Project pages now list and create sprints; sprint details support metadata edits,
+start/complete/cancel actions, and server-filtered sprint issues. Planned sprints
+can start or cancel; active sprints can complete or cancel. Terminal sprints retain
+editable metadata. Management requires project manager or parent-team owner/admin
+permissions, enforced by the backend; permission errors stay local in the UI.
+Date-only values display without timezone conversion. Project issue filters now
+include sprint alongside status, priority, and type. Lifecycle actions never
+reassign or update issues.
 
 Issue details also support requesting AI analysis and viewing immutable history,
 newest first, with advisory summaries, suggested types/priorities, and explanations.

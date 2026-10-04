@@ -1,5 +1,8 @@
 import { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { sprintsApi } from "../api/sprints";
+import { SprintForm } from "../components/SprintForm";
+import { SprintList } from "../components/SprintList";
 import { projectsApi } from "../api/projects";
 import { issuesApi } from "../api/issues";
 import { useResource } from "../hooks/useResource";
@@ -8,6 +11,8 @@ import { IssueList } from "../components/IssueList";
 import { IssueForm } from "../components/IssueForm";
 export function ProjectPage({ id }: { id: number }) {
   const project = useResource(useCallback(() => projectsApi.get(id), [id]));
+  const sprints = useResource(useCallback(() => sprintsApi.list(id), [id]));
+  const [creatingSprint, setCreatingSprint] = useState(false);
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
   if (project.loading) return <Loading label="Loading project…" />;
@@ -43,7 +48,34 @@ export function ProjectPage({ id }: { id: number }) {
           }}
         />
       )}
-      <IssueList projectId={id} />
+      <section className="sprint-section">
+        <div className="section-heading">
+          <h2>Sprints</h2>
+          <button
+            disabled={creatingSprint || sprints.loading || !!sprints.error}
+            onClick={() => setCreatingSprint(true)}
+          >
+            + Create sprint
+          </button>
+        </div>
+        {creatingSprint && (
+          <SprintForm
+            onCancel={() => setCreatingSprint(false)}
+            onSave={async (input) => {
+              const created = await sprintsApi.create(id, input);
+              sprints.setData((previous) => [...(previous ?? []), created]);
+              setCreatingSprint(false);
+            }}
+          />
+        )}
+        <SprintList
+          data={sprints.data}
+          loading={sprints.loading}
+          error={sprints.error}
+          retry={sprints.reload}
+        />
+      </section>
+      <IssueList projectId={id} sprintOptions={sprints.data ?? []} />
     </>
   );
 }

@@ -133,3 +133,19 @@ export const newAnalysis: AIAnalysis = {
   explanation: "An alternative recovery path remains available.",
   created_at: "2026-10-01T12:00:00Z",
 };
+
+export const plannedSprint: Sprint = {
+  ...sprint,
+  id: 2,
+  name: "November planning",
+  goal: "Plan recovery improvements",
+  status: "planned",
+  start_date: "2026-11-01",
+  end_date: "2026-11-14",
+};
+export const completedSprint: Sprint = {
+  ...sprint,
+  id: 3,
+  name: "September delivery",
+  status: "completed",
+};

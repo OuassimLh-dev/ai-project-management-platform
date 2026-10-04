@@ -8,11 +8,20 @@ import {
   priorities,
   statuses,
   type IssueFilters,
+  type Sprint,
 } from "../types/api";
 import { label, userLabel } from "../utils/format";
 import { Badge } from "./Badge";
 import { Loading, ErrorMessage, EmptyState } from "./Feedback";
-export function IssueList({ projectId }: { projectId: number }) {
+export function IssueList({
+  projectId,
+  fixedSprintId,
+  sprintOptions = [],
+}: {
+  projectId: number;
+  fixedSprintId?: number;
+  sprintOptions?: Sprint[];
+}) {
   const [params, setParams] = useSearchParams();
   const status = issueSchema.shape.status.safeParse(params.get("status"));
   const priority = issueSchema.shape.priority.safeParse(params.get("priority"));
@@ -20,16 +29,29 @@ export function IssueList({ projectId }: { projectId: number }) {
   const statusValue = status.success ? status.data : undefined;
   const priorityValue = priority.success ? priority.data : undefined;
   const typeValue = type.success ? type.data : undefined;
+  const rawSprint = params.get("sprint_id") ?? "";
+  const parsedSprint = /^\d+$/.test(rawSprint) ? Number(rawSprint) : 0;
+  const sprintValue =
+    fixedSprintId ??
+    (Number.isSafeInteger(parsedSprint) && parsedSprint > 0
+      ? parsedSprint
+      : undefined);
   const load = useCallback(() => {
     const filters: IssueFilters = {
       ...(statusValue ? { status: statusValue } : {}),
       ...(priorityValue ? { priority: priorityValue } : {}),
       ...(typeValue ? { issue_type: typeValue } : {}),
+      ...(sprintValue ? { sprint_id: sprintValue } : {}),
     };
     return issuesApi.list(projectId, filters);
-  }, [projectId, statusValue, priorityValue, typeValue]);
+  }, [projectId, statusValue, priorityValue, typeValue, sprintValue]);
   const resource = useResource(load);
-  const filtered = !!(statusValue || priorityValue || typeValue);
+  const filtered = !!(
+    statusValue ||
+    priorityValue ||
+    typeValue ||
+    (!fixedSprintId && sprintValue)
+  );
   function change(name: string, value: string) {
     const next = new URLSearchParams(params);
     if (value) next.set(name, value);
@@ -85,6 +107,26 @@ export function IssueList({ projectId }: { projectId: number }) {
             </select>
           </label>
         ))}
+        {!fixedSprintId && (
+          <label>
+            Filter sprint
+            <select
+              value={sprintValue ?? ""}
+              onChange={(event) => change("sprint_id", event.target.value)}
+            >
+              <option value="">All sprints</option>
+              {sprintValue &&
+                !sprintOptions.some((sprint) => sprint.id === sprintValue) && (
+                  <option value={sprintValue}>Sprint #{sprintValue}</option>
+                )}
+              {sprintOptions.map((sprint) => (
+                <option key={sprint.id} value={sprint.id}>
+                  {sprint.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {filtered && (
           <button className="secondary" onClick={() => setParams({})}>
             Clear filters

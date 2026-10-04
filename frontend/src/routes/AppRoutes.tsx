@@ -13,6 +13,7 @@ import { AuthPage } from "../pages/AuthPage";
 import { TeamsPage } from "../pages/TeamsPage";
 import { TeamPage } from "../pages/TeamPage";
 import { ProjectPage } from "../pages/ProjectPage";
+import { SprintPage } from "../pages/SprintPage";
 import { IssuePage } from "../pages/IssuePage";
 function Protected() {
   const auth = useAuth();
@@ -42,7 +43,11 @@ function NotFound() {
     </div>
   );
 }
-function ResourcePage({ kind }: { kind: "team" | "project" | "issue" }) {
+function ResourcePage({
+  kind,
+}: {
+  kind: "team" | "project" | "issue" | "sprint";
+}) {
   const params = useParams();
   const value = params[`${kind}Id`];
   const id = Number(value);
@@ -50,6 +55,7 @@ function ResourcePage({ kind }: { kind: "team" | "project" | "issue" }) {
     return <NotFound />;
   if (kind === "team") return <TeamPage key={id} id={id} />;
   if (kind === "project") return <ProjectPage key={id} id={id} />;
+  if (kind === "sprint") return <SprintPage key={id} id={id} />;
   return <IssuePage key={id} id={id} />;
 }
 export function AppRoutes() {
@@ -79,6 +85,10 @@ export function AppRoutes() {
           <Route
             path="issues/:issueId"
             element={<ResourcePage kind="issue" />}
+          />
+          <Route
+            path="sprints/:sprintId"
+            element={<ResourcePage kind="sprint" />}
           />
           <Route path="*" element={<NotFound />} />
         </Route>

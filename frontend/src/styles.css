@@ -681,3 +681,20 @@ footer {
   color: #5c6c7d;
   margin-bottom: 0;
 }
+
+.sprint-section,
+.sprint-overview {
+  margin-bottom: 1.5rem;
+}
+.sprint-section > form {
+  margin-bottom: 1rem;
+}
+.sprint-card h3 {
+  overflow-wrap: anywhere;
+}
+.sprint-card > .badge {
+  margin-bottom: 0.75rem;
+}
+.sprint-card p:last-child {
+  margin-bottom: 0;
+}

@@ -58,8 +58,8 @@ export const sprintSchema = z.object({
   project_id: z.number(),
   name: z.string(),
   goal: z.string().nullable(),
-  start_date: z.string(),
-  end_date: z.string(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date(),
   status: z.enum(["planned", "active", "completed", "cancelled"]),
   ...timestamps,
 });
@@ -120,7 +120,7 @@ export type IssueInput = Pick<
 >;
 export type IssueUpdate = Partial<IssueInput>;
 export type IssueFilters = Partial<
-  Pick<Issue, "status" | "priority" | "issue_type">
+  Pick<Issue, "status" | "priority" | "issue_type"> & { sprint_id: number }
 >;
 
 export const aiAnalysisSchema = z.object({
@@ -135,3 +135,9 @@ export const aiAnalysisSchema = z.object({
   created_at: z.iso.datetime({ offset: true, local: true }),
 });
 export type AIAnalysis = z.infer<typeof aiAnalysisSchema>;
+
+export type SprintInput = Pick<
+  Sprint,
+  "name" | "goal" | "start_date" | "end_date"
+>;
+export type SprintUpdate = Partial<SprintInput & Pick<Sprint, "status">>;
