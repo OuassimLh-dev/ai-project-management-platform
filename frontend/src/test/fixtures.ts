@@ -1,4 +1,5 @@
 import type {
+  AIAnalysis,
   User,
   Team,
   Project,
@@ -110,4 +111,25 @@ export const sprint: Sprint = {
   end_date: "2026-10-14",
   status: "active",
   ...dates,
+};
+
+export const analysis: AIAnalysis = {
+  id: 1,
+  issue_id: 1,
+  requested_by_id: 1,
+  summary: "Password reset links expire before users can complete recovery.",
+  suggested_type: "bug",
+  suggested_priority: "critical",
+  explanation: "Account recovery is blocked for affected users.",
+  model_name: "test/triage-model",
+  created_at: "2026-10-01T11:00:00Z",
+};
+export const newAnalysis: AIAnalysis = {
+  ...analysis,
+  id: 2,
+  suggested_type: "feature",
+  suggested_priority: "low",
+  summary: "Consider improving the recovery link lifetime.",
+  explanation: "An alternative recovery path remains available.",
+  created_at: "2026-10-01T12:00:00Z",
 };

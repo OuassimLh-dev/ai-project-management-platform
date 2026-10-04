@@ -651,3 +651,33 @@ footer {
     margin-top: 0.8rem;
   }
 }
+
+.ai-analysis .section-heading {
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+.analysis-result {
+  min-width: 0;
+  border-top: 1px solid #dde4eb;
+  padding-top: 1rem;
+  overflow-wrap: anywhere;
+}
+.analysis-result:first-child {
+  border-top: 3px solid #d7e4ff;
+}
+.analysis-fields {
+  margin: 0;
+}
+.analysis-fields dt {
+  font-size: 0.8rem;
+  color: #647487;
+  margin-bottom: 0.3rem;
+}
+.analysis-fields dd {
+  margin: 0 0 1rem;
+}
+.analysis-meta {
+  font-size: 0.8rem;
+  color: #5c6c7d;
+  margin-bottom: 0;
+}

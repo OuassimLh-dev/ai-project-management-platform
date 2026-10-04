@@ -1,6 +1,8 @@
 import { AxiosError, AxiosHeaders, type AxiosAdapter } from "axios";
 import { transport } from "../api/client";
 import {
+  analysis,
+  newAnalysis,
   activities,
   comment,
   issue,
@@ -97,4 +99,6 @@ export function resetServer() {
     201,
   );
   reply("GET", "/issues/1/activity", activities);
+  reply("GET", "/issues/1/ai/analyses", [analysis]);
+  reply("POST", "/issues/1/ai/analyze", newAnalysis, 201);
 }

@@ -122,3 +122,16 @@ export type IssueUpdate = Partial<IssueInput>;
 export type IssueFilters = Partial<
   Pick<Issue, "status" | "priority" | "issue_type">
 >;
+
+export const aiAnalysisSchema = z.object({
+  id: z.number().int().positive(),
+  issue_id: z.number().int().positive(),
+  requested_by_id: z.number().int().positive(),
+  summary: z.string().trim().min(1).max(2000),
+  suggested_type: issueSchema.shape.issue_type,
+  suggested_priority: issueSchema.shape.priority,
+  explanation: z.string().trim().min(1).max(1000),
+  model_name: z.string().trim().min(1).max(200),
+  created_at: z.iso.datetime({ offset: true, local: true }),
+});
+export type AIAnalysis = z.infer<typeof aiAnalysisSchema>;

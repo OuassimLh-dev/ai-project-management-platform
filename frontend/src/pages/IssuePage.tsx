@@ -6,6 +6,7 @@ import { Loading, ErrorMessage } from "../components/Feedback";
 import { Badge } from "../components/Badge";
 import { IssueForm } from "../components/IssueForm";
 import { Comments } from "../components/Comments";
+import { IssueAIAnalysis } from "../components/IssueAIAnalysis";
 import { Activity } from "../components/Activity";
 import { dateLabel, userLabel } from "../utils/format";
 import type { IssueUpdate } from "../types/api";
@@ -78,8 +79,9 @@ export function IssuePage({ id }: { id: number }) {
               {issue.description || "No description provided."}
             </p>
           </section>
+          <IssueAIAnalysis issueId={id} />
           <Comments issueId={id} />
-          <Activity key={historyVersion} issueId={id} />
+          <Activity key={`activity-${historyVersion}`} issueId={id} />
         </div>
         <aside className="panel details">
           <h2>Issue details</h2>

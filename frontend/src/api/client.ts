@@ -45,6 +45,7 @@ type Options = {
   body?: unknown;
   params?: object;
   authenticated?: boolean;
+  timeout?: number;
 };
 export async function request<T>(
   path: string,
@@ -58,6 +59,7 @@ export async function request<T>(
       method: options.method ?? "GET",
       data: options.body,
       params: options.params,
+      timeout: options.timeout ?? transport.defaults.timeout,
       headers: {
         ...(options.body !== undefined
           ? { "Content-Type": "application/json" }

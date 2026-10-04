@@ -167,8 +167,14 @@ response validation. It includes registration/login, teams and project navigatio
 team/project creation, issue lists with status/priority/type filters, issue
 creation/editing, comments, and read-only activity. Assignment selectors use
 existing project-member and sprint APIs. User IDs are shown where the API does
-not provide names. AI UI, comment edit/delete controls, membership administration,
+not provide names. Comment edit/delete controls, membership administration,
 sprint administration, and analytics are intentionally deferred.
+
+Issue details also support requesting AI analysis and viewing immutable history,
+newest first, with advisory summaries, suggested types/priorities, and explanations.
+AI never automatically modifies Issues or activity; normal editing stays separate.
+Provider configuration and API keys remain backend-only. With AI unconfigured,
+the analysis action shows a safe error while history and normal issue features remain usable.
 
 Use Node.js 22.12+ (a current supported LTS release is recommended). From the
 repository root:
