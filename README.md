@@ -234,3 +234,70 @@ npm test -- --run
 Vitest, React Testing Library, and user-event exercise flows through a mocked Axios
 transport. No ESLint configuration or lint script is included in this milestone.
 Build output, dependencies, coverage, caches, and real environment files are ignored.
+
+## Production-style Docker stack
+
+Requires Docker with Compose. From the repository root:
+
+```bash
+docker compose up -d --build --wait
+docker compose ps
+```
+
+Open http://localhost:8080; the browser calls the API directly at
+http://localhost:8000/api/v1 (health: `/api/v1/health`). Host ports bind only to
+loopback. PostgreSQL is private to the Compose network. nginx serves built assets
+and falls back to index.html for React Router deep links. Neither service uses
+hot reload; both application containers run as non-root users.
+
+Compose uses Python 3.13, Node 22 for the frontend build, PostgreSQL 17, and stable
+nginx. The backend applies existing Alembic migrations before starting Uvicorn;
+migration failure stops startup. For multiple replicas, use one dedicated
+migration/release step before starting API replicas instead of concurrent startup
+migrations. Healthchecks verify PostgreSQL readiness, backend HTTP responsiveness,
+and frontend static serving; they do not depend on AI availability.
+
+Stop containers with `docker compose down`. Database data remains in the named
+`postgres_data` volume. **Only when intentionally discarding all local Docker
+database data**, use `docker compose down -v`. No application data is seeded.
+
+Compose defaults are local-only examples: the database password and JWT secret
+must be replaced before hosting. Override `COMPOSE_DB_PASSWORD` and
+`JWT_SECRET_KEY` through the environment or an ignored root `.env`.
+Use a URL-safe database password for this Compose URL interpolation. Changing the
+password on an existing volume also requires changing the database role password.
+The standalone backend image requires `DATABASE_URL` and a unique
+`JWT_SECRET_KEY` of at least 32 characters; see `backend/.env.example` for other
+settings. Compose uses explicit local frontend CORS origins; set
+`CORS_ALLOWED_ORIGINS` to a JSON array of your frontend origins when hosting.
+The supplied healthcheck expects the default `/api/v1` API prefix.
+
+`VITE_API_BASE_URL` is public **build-time** configuration. Compose forwards it as
+a frontend build argument; rebuild the frontend after changing it. For example:
+
+```bash
+docker build --build-arg VITE_API_BASE_URL=https://api.example.com/api/v1 frontend
+```
+
+Use a browser-reachable API URL, not the Compose service hostname. Runtime
+environment changes cannot rewrite the built JavaScript. Never put database
+credentials, JWT secrets, or provider keys in frontend variables/build arguments.
+
+AI is disabled by default and normal functionality remains available.
+Optional `AI_PROVIDER`, `AI_MODEL`, `OPENAI_API_KEY`, and `AI_TIMEOUT_SECONDS`
+are passed only to the backend. No real secrets or environment files are baked
+into either image. Avoid sharing resolved `docker compose config` output when
+using real environment values because it can contain secrets.
+
+## Continuous integration
+
+GitHub Actions runs on pushes to main and pull requests targeting main, with
+read-only repository permissions. Independent jobs run backend pytest and apply
+Alembic migrations to an empty PostgreSQL database; install frontend dependencies
+with `npm ci`, typecheck, test, and build; and validate Compose plus build both
+container images. CI uses disposable example credentials and no live AI keys.
+Images are not published and nothing is deployed.
+
+The images provide a foundation for hosting. Before production, configure unique
+secrets, HTTPS, database backups, explicit CORS origins, and the public API build
+URL. Railway deployment is not part of this milestone.
