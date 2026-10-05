@@ -1,37 +1,72 @@
 # AI-Powered Software Project Management Platform
 
-A full-stack software project management platform for teams to organize projects,
-sprints, issues, collaboration, and AI-assisted issue triage.
+A deployed full-stack workspace for software teams to plan sprints, track issues,
+collaborate, and review optional AI-assisted triage suggestions.
 
-## Planned Core Capabilities
+**Status:** V1 implemented and deployed · **Core stack:** React, TypeScript,
+FastAPI, PostgreSQL
 
-- Team and project workspaces
-- Role-based memberships
-- Bugs, features, and tasks
-- Issue assignment and workflow tracking
-- Sprint planning
-- Comments and activity history
-- Project dashboards
-- AI issue summarization
-- AI issue classification
-- AI priority suggestions with explanations
+## Live Demo
 
-## Planned Stack
+- [Live Demo — Web App](https://ai-project-management-platform-ebon.vercel.app)
+- [API Health](https://backend-production-b30f.up.railway.app/api/v1/health)
 
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- React
-- TypeScript
-- Docker
-- pytest
-- Playwright
-- GitHub Actions
+The React/Vite frontend is hosted on Vercel; the FastAPI backend and PostgreSQL
+are hosted on Railway. **AI is intentionally disabled in the current public
+demo.** The core application remains usable without an AI provider configured.
 
-See `docs/v1-scope.md`, `docs/data-model.md`, and `docs/architecture.md` for the
-initial system design.
+## Key Features
 
-## Backend Development
+- JWT authentication with Argon2 password hashing.
+- Team workspaces, role-based memberships, and project-level access control.
+- Sprint creation, metadata editing, and start/complete/cancel lifecycle actions.
+- Bugs, features, and tasks with assignment, workflow status, and combined filters.
+- Issue comments and an append-only history of issue changes.
+- Optional advisory AI summaries, type/priority suggestions, and immutable analysis history.
+- Responsive React frontend with reusable forms, protected routes, and validated API responses.
+
+Membership management and comment edit/delete operations exist in the API;
+their frontend administration controls are deferred.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Browser[User Browser] --> Frontend["Vercel · React + TypeScript + Vite"]
+    Frontend -->|HTTPS REST / Bearer JWT| API["Railway · FastAPI"]
+    API --> Database["Railway · PostgreSQL"]
+    API -.->|Disabled in public demo| AI["AI provider abstraction · OpenAI Responses API"]
+```
+
+The backend enforces authorization through team and project membership. Alembic
+manages schema migrations, and the frontend validates API responses with Zod.
+AI analysis is advisory: it never automatically changes issues or their activity.
+
+## Tech Stack
+
+| Layer | Technologies |
+| --- | --- |
+| Backend | Python, FastAPI, SQLAlchemy 2.x, PostgreSQL, Alembic, Pydantic, JWT, Argon2 |
+| Frontend | React, TypeScript, Vite, React Router, Axios, Zod |
+| Testing | pytest, Vitest, React Testing Library |
+| Infrastructure | Docker, Docker Compose, nginx, GitHub Actions, Railway, Vercel |
+| Optional AI | Provider abstraction, OpenAI Responses API adapter, validated structured output |
+
+## Testing and Quality
+
+The latest verified baseline contains **580 passing backend tests** and
+**83 passing frontend tests**. Backend tests use isolated SQLite databases;
+frontend tests use a mocked Axios transport. AI tests use deterministic providers
+and mocked HTTP without live provider calls.
+
+CI checks backend tests, Alembic migrations against an empty PostgreSQL database,
+frontend typechecking, tests and production builds, Compose configuration, and
+both Docker image builds. Test commands are included below. A browser E2E suite
+is not currently implemented.
+
+## Local Development
+
+### Backend
 
 Requires Python 3.13+; PostgreSQL is the runtime database.
 
@@ -57,11 +92,47 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+### Frontend
+
+Use Node.js 22.12+ (a current supported LTS release is recommended). From the
+repository root:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open http://127.0.0.1:5173. The API defaults to
+`http://localhost:8000/api/v1`. To change it, copy `frontend/.env.example` to
+`frontend/.env`, set `VITE_API_BASE_URL`, and restart Vite. Vite variables are public
+build-time values; never put secrets in them. `npm ci` installs the dependencies
+recorded in `package-lock.json`.
+
+In a separate terminal, configure the backend as described above, then run:
+
+```bash
+cd backend
+source .venv/bin/activate
+export CORS_ALLOWED_ORIGINS='["http://localhost:5173","http://127.0.0.1:5173"]'
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+`CORS_ALLOWED_ORIGINS` accepts a JSON array of explicit HTTP(S) origins. It defaults
+to an empty list; the backend environment example lists the two local Vite origins.
+Cookies/credentialed CORS are disabled; authentication uses an Authorization
+Bearer header. Configure explicit origins for other environments.
+
+## Backend / API Details
+
 `GET /api/v1/health` returns `{"status":"ok"}` without opening a database
-connection. Startup validates configuration but does not connect to PostgreSQL
-or create tables. Alembic uses the application database URL and tracks schema
-versions; `alembic history` shows the migration history. Users, teams, projects,
+connection. Application initialization validates configuration without connecting
+to PostgreSQL or creating tables; the container startup command runs migrations
+separately. Alembic uses the application database URL and tracks schema versions; `alembic history` shows the migration history. Users, teams, projects,
 their memberships, and project-scoped sprints are modeled.
+
+### Authentication
 
 Authentication accepts JSON at `POST /api/v1/auth/register` (first name, last name,
 email, password) and `POST /api/v1/auth/login` (email, password). Registration
@@ -69,8 +140,9 @@ requires an 8–128 character password; passwords are stored as Argon2 hashes.
 Login returns a Bearer JWT for `GET /api/v1/auth/me`. Responses never include
 passwords or hashes. Duplicate registration returns 409; invalid credentials,
 inactive accounts, and missing/invalid tokens return 401. There are no global
-roles; team/project membership authorization belongs to later milestones.
+roles; authorization is enforced through team and project memberships.
 
+### Teams
 
 Team endpoints under `/api/v1/teams` support creation/listing (`POST`/`GET`),
 viewing/updating metadata (`GET`/`PATCH /{team_id}`), and member listing/adding
@@ -84,6 +156,7 @@ the owner returns 400. Ownership transfer
 and team deletion are not implemented in V1. Apply migration `0002` with the same
 `alembic upgrade head` command.
 
+### Projects
 
 Projects belong to one team. Create/list them at
 `POST`/`GET /api/v1/teams/{team_id}/projects`; view/update them at
@@ -102,6 +175,7 @@ user from the team. Multiple managers are allowed, but removing/demoting the las
 manager returns 400. Project deletion is not implemented. Apply migration `0003`
 with `alembic upgrade head`.
 
+### Sprints
 
 Sprints belong to projects: `POST`/`GET /api/v1/projects/{project_id}/sprints`
 create/list them; `GET`/`PATCH /api/v1/sprints/{sprint_id}` retrieve/update them.
@@ -113,6 +187,7 @@ cannot reopen; metadata remains editable. Names may repeat, goals are optional,
 and required dates permit same-day sprints. Dates never change status automatically.
 No sprint deletion is implemented. Apply migration `0004` with `alembic upgrade head`.
 
+### Issues
 
 Issues belong to projects. All authorized project readers can create and edit
 issues. Types are `bug`, `feature`, and `task`; priorities are `low`, `medium`
@@ -129,6 +204,7 @@ Use `POST`/`GET /api/v1/projects/{project_id}/issues` and
 `status`, `priority`, `issue_type`, `assignee_id`, and `sprint_id` filters.
 Apply migration `0005` with `alembic upgrade head`. Issue deletion is not implemented.
 
+### Comments and activity
 
 Issue comments: `POST`/`GET /api/v1/issues/{issue_id}/comments` allow authorized
 issue users to create/list comments. Only the author with current issue access
@@ -138,6 +214,7 @@ event and one entry per changed issue field, committed atomically with the issue
 No-op updates add nothing; comment actions remain separate from field history.
 Apply migration `0006` with `alembic upgrade head`.
 
+### Optional AI analysis
 
 AI issue analysis is advisory only: it summarizes the issue, suggests its type
 and priority, and gives a concise priority explanation. It never changes Issue
@@ -160,7 +237,7 @@ access is rechecked before saving. Results describe the input read at request ti
 which may have since changed. Tests use deterministic providers and mocked HTTP,
 with live HTTP transport blocked; no API account/key is required for pytest.
 
-## Frontend Development
+## Frontend Details
 
 The V1 frontend uses React, strict TypeScript, Vite, React Router, Axios, and Zod
 response validation. It includes registration/login, teams and project navigation,
@@ -185,36 +262,6 @@ AI never automatically modifies Issues or activity; normal editing stays separat
 Provider configuration and API keys remain backend-only. With AI unconfigured,
 the analysis action shows a safe error while history and normal issue features remain usable.
 
-Use Node.js 22.12+ (a current supported LTS release is recommended). From the
-repository root:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://127.0.0.1:5173. The API defaults to
-`http://localhost:8000/api/v1`. To change it, copy `frontend/.env.example` to
-`frontend/.env`, set `VITE_API_BASE_URL`, and restart Vite. Vite variables are public
-build-time values; never put secrets in them. `package-lock.json` is included;
-subsequent reproducible installs can use `npm ci`.
-
-In a separate terminal, configure the backend as described above, then run:
-
-```bash
-cd backend
-source .venv/bin/activate
-export CORS_ALLOWED_ORIGINS='["http://localhost:5173","http://127.0.0.1:5173"]'
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-`CORS_ALLOWED_ORIGINS` accepts a JSON array of explicit HTTP(S) origins. It defaults
-to an empty list; the backend environment example lists the two local Vite origins.
-Cookies/credentialed CORS are disabled; authentication uses an Authorization
-Bearer header. Configure explicit origins for other environments.
-
 Authentication uses a single sessionStorage token module: boot verifies `/auth/me`,
 logout removes the token, and an authenticated request returning 401 clears the
 session and redirects to login. Passwords are never persisted. sessionStorage
@@ -232,10 +279,30 @@ npm test -- --run
 ```
 
 Vitest, React Testing Library, and user-event exercise flows through a mocked Axios
-transport. No ESLint configuration or lint script is included in this milestone.
+transport. No ESLint configuration or lint script is currently included.
 Build output, dependencies, coverage, caches, and real environment files are ignored.
 
-## Production-style Docker stack
+## Production Deployment
+
+The public application uses HTTPS endpoints:
+
+| Service | Hosting / public endpoint |
+| --- | --- |
+| Frontend | Vercel — [Web App](https://ai-project-management-platform-ebon.vercel.app) |
+| Backend | Railway — [API](https://backend-production-b30f.up.railway.app) |
+| Database | Railway PostgreSQL; no public application link |
+
+The frontend uses its public API URL through the build-time `VITE_API_BASE_URL`.
+The backend allows the explicit Vercel frontend origin through
+`CORS_ALLOWED_ORIGINS`; database credentials and provider keys stay server-side.
+The committed Vercel SPA rewrite serves `index.html` for React Router deep links.
+The backend container applies Alembic migrations before starting Uvicorn and
+stops if migration execution fails. AI remains disabled in the public demo.
+
+Local production-style Docker Compose remains supported independently of this
+hosted deployment.
+
+## Local Production-style Docker Stack
 
 Requires Docker with Compose. From the repository root:
 
@@ -289,15 +356,23 @@ are passed only to the backend. No real secrets or environment files are baked
 into either image. Avoid sharing resolved `docker compose config` output when
 using real environment values because it can contain secrets.
 
-## Continuous integration
+## Continuous Integration
 
 GitHub Actions runs on pushes to main and pull requests targeting main, with
 read-only repository permissions. Independent jobs run backend pytest and apply
 Alembic migrations to an empty PostgreSQL database; install frontend dependencies
 with `npm ci`, typecheck, test, and build; and validate Compose plus build both
 container images. CI uses disposable example credentials and no live AI keys.
-Images are not published and nothing is deployed.
+This validation workflow does not publish images or deploy services.
 
-The images provide a foundation for hosting. Before production, configure unique
-secrets, HTTPS, database backups, explicit CORS origins, and the public API build
-URL. Railway deployment is not part of this milestone.
+## V1 Scope / Deferred Features
+
+The implemented V1 covers authentication, team/project workspaces, sprint planning,
+issue workflows, collaboration, and optional advisory AI analysis. Deferred work
+includes kanban drag/drop, advanced analytics and dashboards, notifications,
+realtime updates, GitHub integration, attachments, time tracking, billing, and a
+mobile application. Membership administration UI and comment editing/deleting UI
+are also deferred; their backend operations already exist.
+
+See [V1 scope](docs/v1-scope.md), [data model](docs/data-model.md), and
+[architecture](docs/architecture.md) for design details and longer-term plans.
