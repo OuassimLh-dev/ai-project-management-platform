@@ -28,6 +28,24 @@ demo.** The core application remains usable without an AI provider configured.
 Membership management and comment edit/delete operations exist in the API;
 their frontend administration controls are deferred.
 
+## Screenshots
+
+### Team Workspace
+
+![Team workspace](docs/screenshots/team-workspace.png)
+
+### Project Workspace
+
+![Project workspace](docs/screenshots/project-workspace.png)
+
+### Sprint Management
+
+![Sprint management](docs/screenshots/sprint-management.png)
+
+### Issue Detail and AI Analysis
+
+![Issue detail and AI analysis](docs/screenshots/issue-detail.png)
+
 ## Architecture
 
 ```mermaid
