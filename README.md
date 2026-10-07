@@ -1,5 +1,7 @@
 # AI-Powered Software Project Management Platform
 
+[![CI](https://github.com/OuassimLh-dev/ai-project-management-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/OuassimLh-dev/ai-project-management-platform/actions/workflows/ci.yml)
+
 A deployed full-stack workspace for software teams to plan sprints, track issues,
 collaborate, and review optional AI-assisted triage suggestions.
 
