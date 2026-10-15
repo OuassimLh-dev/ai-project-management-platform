@@ -247,3 +247,31 @@ test("history error stays local and can be retried", async () => {
   await user.click(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByText(analysis.summary)).toBeInTheDocument();
 });
+
+test("unconfigured AI explains availability and preserves issue and activity", async () => {
+  reply("POST", "/issues/1/ai/analyze", { detail: "AI provider is not configured" }, 503);
+  const user = userEvent.setup();
+  renderApp("/app/issues/1");
+  await screen.findByText(analysis.summary);
+  await screen.findByText("Created by User #1");
+  const activity = screen.getByRole("heading", { name: "Activity" }).closest("section")?.textContent;
+  await user.click(screen.getByRole("button", { name: "Analyze issue" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "AI analysis is currently unavailable because no AI provider is configured.",
+  );
+  expect(screen.getByText(analysis.summary)).toBeInTheDocument();
+  expect(screen.getAllByRole("article")).toHaveLength(1);
+  expect(screen.getByRole("heading", { name: "Activity" }).closest("section")?.textContent).toBe(activity);
+  expect(screen.getByRole("button", { name: "Analyze issue" })).toBeEnabled();
+  expect(calls.filter((call) => call.method !== "GET")).toEqual([
+    expect.objectContaining({ method: "POST", path: "/issues/1/ai/analyze", body: undefined }),
+  ]);
+  await user.click(screen.getByRole("button", { name: "Edit issue" }));
+  expect(screen.getByLabelText("Title")).toHaveValue(issue.title);
+  expect(screen.getByLabelText("Description")).toHaveValue(issue.description);
+  expect(screen.getByLabelText("Type")).toHaveValue(issue.issue_type);
+  expect(screen.getByLabelText("Priority")).toHaveValue(issue.priority);
+  expect(screen.getByLabelText("Status")).toHaveValue(issue.status);
+  expect(await screen.findByLabelText("Assignee")).toHaveValue(String(issue.assignee_id));
+  expect(screen.getByLabelText("Sprint")).toHaveValue(String(issue.sprint_id));
+});

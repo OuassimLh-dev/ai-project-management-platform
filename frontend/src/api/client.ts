@@ -19,6 +19,12 @@ export class ApiError extends Error {
 }
 const errorSchema = z.object({ detail: z.unknown() });
 function safeDetail(status: number, body: unknown, token: string | null) {
+  // Only map this known safe backend detail; never display arbitrary 5xx text.
+  if (
+    status === 503 &&
+    errorSchema.safeParse(body).data?.detail === "AI provider is not configured"
+  )
+    return "AI analysis is currently unavailable because no AI provider is configured.";
   if (status >= 500) return "The service is unavailable. Please try again.";
   if (status === 422) return "Please check the form values and try again.";
   const parsed = errorSchema.safeParse(body);

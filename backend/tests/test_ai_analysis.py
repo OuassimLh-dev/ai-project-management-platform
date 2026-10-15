@@ -137,7 +137,9 @@ def test_unconfigured_ai_preserves_normal_endpoints(client, setup, issue, db_ses
     assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
     assert client.get(f"/api/v1/issues/{issue['id']}", headers=headers).status_code == 200
     assert client.get(base(issue) + "/analyses", headers=headers).json() == []
-    assert client.post(base(issue) + "/analyze", headers=headers).status_code == 503
+    response = client.post(base(issue) + "/analyze", headers=headers)
+    assert response.status_code == 503
+    assert response.json() == {"detail": "AI provider is not configured"}
     assert client.post(base(issue) + "/analyze", headers=setup["actors"]["outsider"]["headers"]).status_code == 404
     assert snapshot(db_session, issue["id"]) == before
     assert list(db_session.scalars(select(AIAnalysis))) == []

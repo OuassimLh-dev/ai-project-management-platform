@@ -72,3 +72,30 @@ test("rejects malformed successful responses", async () => {
   reply("GET", "/test", { wrong: true });
   await expect(request("/test", z.string())).rejects.toBeInstanceOf(ApiError);
 });
+
+test("unconfigured AI uses a specific friendly message", async () => {
+  reply("POST", "/issues/1/ai/analyze", { detail: "AI provider is not configured" }, 503);
+  await expect(
+    request("/issues/1/ai/analyze", z.string(), { method: "POST" }),
+  ).rejects.toMatchObject({
+    status: 503,
+    detail: "AI analysis is currently unavailable because no AI provider is configured.",
+  });
+});
+test.each([
+  [500, { detail: "AI provider is not configured" }],
+  [502, { detail: "AI provider is not configured" }],
+  [503, { detail: "AI provider is unavailable" }],
+  [503, { detail: "Could not save AI analysis" }],
+  [503, { detail: "AI provider is not configured: private-secret" }],
+  [503, { detail: { message: "AI provider is not configured" } }],
+  [503, null],
+])("service failure %s keeps a generic safe message (%j)", async (status, body) => {
+  reply("POST", "/issues/1/ai/analyze", body, status as number);
+  await expect(
+    request("/issues/1/ai/analyze", z.string(), { method: "POST" }),
+  ).rejects.toMatchObject({
+    status,
+    detail: "The service is unavailable. Please try again.",
+  });
+});
