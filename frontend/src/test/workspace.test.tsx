@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "./render";
-import { calls, reply } from "./server";
-import { issue } from "./fixtures";
+import { calls, handlers, reply } from "./server";
+import { comment, issue } from "./fixtures";
 
 test("team list and project navigation", async () => {
   const user = userEvent.setup();
@@ -184,7 +184,18 @@ test("edit issue sends only changed mutable fields", async () => {
       ?.body,
   ).toEqual({ title: "Updated title" });
 });
-test("comment submits only body", async () => {
+test("comment submission locks input until success and submits only body", async () => {
+  const returnedComment = { ...comment, id: 2, body: "New comment" };
+  let complete: (value: { data: typeof comment }) => void = () => {
+    throw new Error("Not started");
+  };
+  handlers.set(
+    "POST /issues/1/comments",
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
   const user = userEvent.setup();
   renderApp("/app/issues/1");
   await user.type(
@@ -192,23 +203,55 @@ test("comment submits only body", async () => {
     " New comment ",
   );
   await user.click(screen.getByRole("button", { name: "Post comment" }));
+  const textarea = screen.getByLabelText("Add a comment");
+  expect(textarea).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Posting…" })).toBeDisabled();
+  await user.type(textarea, "Unsent edits");
+  expect(textarea).toHaveValue(" New comment ");
+  await act(async () => complete({ data: returnedComment }));
   expect(await screen.findByText("New comment")).toBeInTheDocument();
+  expect(textarea).toHaveValue("");
+  expect(textarea).toBeEnabled();
+  await user.type(textarea, "Next draft");
+  expect(textarea).toHaveValue("Next draft");
   expect(
     calls.find(
       (call) => call.method === "POST" && call.path.endsWith("/comments"),
     )?.body,
   ).toEqual({ body: "New comment" });
 });
-test("comment failure retains text", async () => {
-  reply("POST", "/issues/1/comments", { detail: "Comment rejected" }, 400);
+test("comment submission locks input until failure and retains text", async () => {
+  let complete: (value: { data: { detail: string }; status: number }) => void =
+    () => {
+      throw new Error("Not started");
+    };
+  handlers.set(
+    "POST /issues/1/comments",
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
   const user = userEvent.setup();
   renderApp("/app/issues/1");
   await user.type(await screen.findByLabelText("Add a comment"), "Keep this");
   await user.click(screen.getByRole("button", { name: "Post comment" }));
+  const textarea = screen.getByLabelText("Add a comment");
+  expect(textarea).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Posting…" })).toBeDisabled();
+  await user.type(textarea, "Unsent edits");
+  expect(textarea).toHaveValue("Keep this");
+  await act(async () =>
+    complete({ data: { detail: "Comment rejected" }, status: 400 }),
+  );
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Comment rejected",
   );
-  expect(screen.getByLabelText("Add a comment")).toHaveValue("Keep this");
+  expect(textarea).toHaveValue("Keep this");
+  expect(textarea).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Post comment" })).toBeEnabled();
+  await user.type(textarea, " revised");
+  expect(textarea).toHaveValue("Keep this revised");
 });
 test("issue unavailable state", async () => {
   reply("GET", "/issues/1", { detail: "Issue not found" }, 404);

@@ -57,6 +57,7 @@ export function Comments({ issueId }: { issueId: number }) {
         <label>
           Add a comment
           <textarea
+            disabled={pending}
             required
             maxLength={10000}
             rows={3}
