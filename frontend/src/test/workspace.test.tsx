@@ -184,6 +184,109 @@ test("edit issue sends only changed mutable fields", async () => {
       ?.body,
   ).toEqual({ title: "Updated title" });
 });
+test.each([
+  ["create", "success"],
+  ["edit", "success"],
+  ["create", "failure"],
+  ["edit", "failure"],
+] as const)("issue %s locks draft until save %s", async (mode, outcome) => {
+  const method = mode === "create" ? "POST" : "PATCH";
+  const path = mode === "create" ? "/projects/1/issues" : "/issues/1";
+  let complete: (value: { data: unknown; status: number }) => void = () => {
+    throw new Error("Not started");
+  };
+  handlers.set(
+    `${method} ${path}`,
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  const user = userEvent.setup();
+  renderApp(mode === "create" ? "/app/projects/1" : "/app/issues/1");
+  await user.click(await screen.findByRole("button", {
+    name: mode === "create" ? "+ Create issue" : "Edit issue",
+  }));
+  await screen.findByLabelText("Assignee");
+  const draft = {
+    title: "Saved issue title",
+    description: "Saved issue description",
+    issue_type: "feature",
+    priority: "low",
+    status: "done",
+    assignee_id: 2,
+    sprint_id: 1,
+  };
+  const title = screen.getByLabelText("Title");
+  const description = screen.getByLabelText("Description");
+  await user.clear(title);
+  await user.type(title, draft.title);
+  await user.clear(description);
+  await user.type(description, draft.description);
+  const selections: [string, string, string][] = [
+    ["Type", draft.issue_type, "task"],
+    ["Priority", draft.priority, "high"],
+    ["Status", draft.status, "backlog"],
+    ["Assignee", String(draft.assignee_id), ""],
+    ["Sprint", String(draft.sprint_id), ""],
+  ];
+  for (const [label, value] of selections) {
+    await user.selectOptions(screen.getByLabelText(label), value);
+  }
+  await user.click(screen.getByRole("button", {
+    name: mode === "create" ? "Save issue" : "Save changes",
+  }));
+  const fields = [title, description, ...selections.map(([label]) =>
+    screen.getByLabelText(label))];
+  for (const field of fields) expect(field).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  await user.type(title, " lost edit");
+  await user.type(description, " lost edit");
+  for (const [label, , alternative] of selections) {
+    await user.selectOptions(screen.getByLabelText(label), alternative);
+  }
+  const expectDraft = () => {
+    expect(title).toHaveValue(draft.title);
+    expect(description).toHaveValue(draft.description);
+    for (const [label, value] of selections) {
+      expect(screen.getByLabelText(label)).toHaveValue(value);
+    }
+  };
+  expectDraft();
+  expect(calls.filter((call) => call.method === method && call.path === path))
+    .toHaveLength(1);
+  const { sprint_id, ...changedDraft } = draft;
+  expect(calls.find((call) => call.method === method && call.path === path)?.body)
+    .toEqual(mode === "create" ? draft : changedDraft);
+  if (outcome === "success") {
+    const saved = { ...issue, ...draft };
+    reply("GET", "/issues/1", saved);
+    await act(async () => complete({ data: saved, status: 200 }));
+    expect(await screen.findByRole("heading", { name: draft.title }))
+      .toBeInTheDocument();
+    expect(screen.getByText(draft.description)).toBeInTheDocument();
+    expect(screen.getByText("Done", { selector: ".badge" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit issue" })).toBeEnabled();
+  } else {
+    await act(async () => complete({
+      data: { detail: "Issue save rejected" }, status: 400,
+    }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Issue save rejected");
+    expect(screen.getByRole("heading", {
+      name: mode === "create" ? "Create issue" : "Edit issue",
+    })).toBeInTheDocument();
+    expectDraft();
+    for (const field of fields) expect(field).toBeEnabled();
+    expect(screen.getByRole("button", {
+      name: mode === "create" ? "Save issue" : "Save changes",
+    })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
+    await user.type(title, " revised");
+    expect(title).toHaveValue(draft.title + " revised");
+  }
+});
 test("comment submission locks input until success and submits only body", async () => {
   const returnedComment = { ...comment, id: 2, body: "New comment" };
   let complete: (value: { data: typeof comment }) => void = () => {

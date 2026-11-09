@@ -66,6 +66,7 @@ export function IssueForm({
         Title
         <input
           name="title"
+          disabled={pending}
           required
           maxLength={200}
           pattern=".*\S.*"
@@ -77,6 +78,7 @@ export function IssueForm({
         Description
         <textarea
           name="description"
+          disabled={pending}
           maxLength={10000}
           rows={5}
           defaultValue={initial?.description ?? ""}
@@ -105,7 +107,11 @@ export function IssueForm({
         ].map((field) => (
           <label key={field.name}>
             {field.text}
-            <select name={field.name} defaultValue={field.value}>
+            <select
+              name={field.name}
+              disabled={pending}
+              defaultValue={field.value}
+            >
               {field.values.map((value) => (
                 <option key={value} value={value}>
                   {label(value)}
@@ -125,6 +131,7 @@ export function IssueForm({
             Assignee
             <select
               name="assignee_id"
+              disabled={pending}
               defaultValue={initial?.assignee_id ?? ""}
             >
               <option value="">Unassigned</option>
@@ -137,7 +144,11 @@ export function IssueForm({
           </label>
           <label>
             Sprint
-            <select name="sprint_id" defaultValue={initial?.sprint_id ?? ""}>
+            <select
+              name="sprint_id"
+              disabled={pending}
+              defaultValue={initial?.sprint_id ?? ""}
+            >
               <option value="">No sprint</option>
               {options.data?.sprints.map((sprint) => (
                 <option key={sprint.id} value={sprint.id}>
